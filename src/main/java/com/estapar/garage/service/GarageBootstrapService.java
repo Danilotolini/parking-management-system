@@ -1,6 +1,6 @@
 package com.estapar.garage.service;
 
-import com.estapar.garage.dto.GarageResponseDto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.estapar.garage.entity.ParkingSpot;
 import com.estapar.garage.repository.ParkingSpotRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,25 +32,46 @@ public class GarageBootstrapService implements ApplicationRunner {
     @Value("${garage.bootstrap.enabled:true}")
     private boolean bootstrapEnabled;
 
-    @Value("${garage.simulator.base-url:http://garage-sim:3000}")
+    @Value("${garage.simulator.base-url:http://localhost:3000}")
     private String simulatorBaseUrl;
+
+    // ── DTOs internos (só usados aqui) ──────────────────────────────────────
+
+    private record GarageResponse(
+            List<SectorDto> garage,
+            List<SpotDto> spots
+    ) {}
+
+    private record SectorDto(
+            String sector,
+            @JsonProperty("base_price") BigDecimal basePrice
+    ) {}
+
+    private record SpotDto(
+            Long id,
+            String sector,
+            BigDecimal lat,
+            BigDecimal lng
+    ) {}
+
+    // ── Bootstrap ────────────────────────────────────────────────────────────
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         if (!bootstrapEnabled) {
-            log.info("Garage bootstrap disabled (garage.bootstrap.enabled=false)");
+            log.info("Garage bootstrap disabled.");
             return;
         }
 
         try {
-            GarageResponseDto resp = garageSimulatorClient.get()
+            GarageResponse resp = garageSimulatorClient.get()
                     .uri("/garage")
                     .retrieve()
-                    .body(GarageResponseDto.class);
+                    .body(GarageResponse.class);
 
-            if (resp == null || resp.getSpots() == null || resp.getSpots().isEmpty()) {
-                log.warn("Simulator returned empty /garage spots. Skipping bootstrap.");
+            if (resp == null || resp.spots() == null || resp.spots().isEmpty()) {
+                log.warn("Simulator returned empty /garage. Skipping bootstrap.");
                 return;
             }
 
@@ -59,43 +80,37 @@ public class GarageBootstrapService implements ApplicationRunner {
                 return;
             }
 
-            // sector -> basePrice (vem do resp.garage)
             var baseBySector = new HashMap<String, BigDecimal>();
-            if (resp.getGarage() != null) {
-                for (var s : resp.getGarage()) {
-                    baseBySector.put(s.getSector(), s.getBasePrice());
-                }
+            if (resp.garage() != null) {
+                resp.garage().forEach(s -> baseBySector.put(s.sector(), s.basePrice()));
             }
 
-            List<ParkingSpot> toInsert = new ArrayList<>();
-
-            for (var spot : resp.getSpots()) {
-                var base = baseBySector.get(spot.getSector());
+            List<ParkingSpot> spots = new ArrayList<>();
+            for (SpotDto dto : resp.spots()) {
+                BigDecimal base = baseBySector.get(dto.sector());
                 if (base == null) {
-                    log.warn("Spot {} sector {} has no base_price in garage list. Skipping.",
-                            spot.getId(), spot.getSector());
+                    log.warn("Spot {} sector {} missing base_price. Skipping.", dto.id(), dto.sector());
                     continue;
                 }
-
-                toInsert.add(ParkingSpot.builder()
-                        .id(spot.getId())
-                        .sector(spot.getSector())
+                spots.add(ParkingSpot.builder()
+                        .id(dto.id())
+                        .sector(dto.sector())
                         .basePrice(base)
-                        .occupied(false) // não confiar no simulador
-                        .lat(spot.getLat())
-                        .lng(spot.getLng())
+                        .lat(dto.lat())
+                        .lng(dto.lng())
+                        .occupied(false)
                         .build());
             }
 
-            spotRepository.saveAll(toInsert);
-            log.info("Bootstrap OK: inserted {} spots from simulator.", toInsert.size());
+            spotRepository.saveAll(spots);
+            log.info("Bootstrap OK: inserted {} spots from simulator.", spots.size());
 
         } catch (ResourceAccessException e) {
-            log.warn("Garage simulator not reachable at {}. Skipping bootstrap.", simulatorBaseUrl);
+            log.warn("Simulator not reachable at {}. Skipping bootstrap.", simulatorBaseUrl);
         } catch (RestClientResponseException e) {
-            log.warn("Garage simulator returned HTTP {}. Skipping bootstrap.", e.getStatusCode().value());
+            log.warn("Simulator returned HTTP {}. Skipping bootstrap.", e.getStatusCode().value());
         } catch (Exception e) {
-            log.warn("Unexpected error during garage bootstrap. Skipping. Cause: {}", e.toString());
+            log.warn("Bootstrap error: {}", e.toString());
         }
     }
 }
