@@ -1,6 +1,7 @@
 package com.estapar.garage.controller;
 
 import com.estapar.garage.dto.WebhookEventRequest;
+import com.estapar.garage.dto.WebhookEventResponse;
 import com.estapar.garage.service.WebhookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,8 @@ public class WebhookController {
     private final WebhookService webhookService;
 
     @PostMapping("/webhook")
-    public ResponseEntity<Void> webhook(@Valid @RequestBody WebhookEventRequest request) {
-        log.info("WEBHOOK received: eventType={}, plate={}, entryTime={}, exitTime={}",
-                request.getEventType(), request.getLicensePlate(),
-                request.getEntryTime(), request.getExitTime());
-
-        webhookService.handle(request); // se estourar exceção, o Spring devolve 4xx/5xx
-        return ResponseEntity.ok().build();
+    public ResponseEntity<WebhookEventResponse> webhook(@RequestBody WebhookEventRequest request) {
+        WebhookEventResponse response = webhookService.handle(request);
+        return ResponseEntity.ok(response);
     }
 }

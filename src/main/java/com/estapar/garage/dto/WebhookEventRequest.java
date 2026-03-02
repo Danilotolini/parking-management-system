@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 public class WebhookEventRequest {
@@ -20,6 +22,6 @@ public class WebhookEventRequest {
     @JsonProperty("exit_time")
     private String exitTime;
 
-    private Double lat;
-    private Double lng;
+    private BigDecimal lat;
+    private BigDecimal lng;
 }

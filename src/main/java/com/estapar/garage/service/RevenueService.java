@@ -22,9 +22,9 @@ public class RevenueService {
         BigDecimal total = sessionRepository.sumRevenueBySectorBetween(sector, start, end);
 
         return RevenueResponseDto.builder()
-                .sector(sector)
-                .date(date.toString())
-                .total(total)
+                .amount(total != null ? total : BigDecimal.ZERO)
+                .currency("BRL")
+                .timestamp(Instant.now())
                 .build();
     }
 }

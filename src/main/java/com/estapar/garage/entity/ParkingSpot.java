@@ -24,9 +24,9 @@ public class ParkingSpot {
     @Column(nullable = false)
     private boolean occupied;
 
-    @Column(nullable = false)
-    private Double lat;
+    @Column(nullable = false, precision = 10, scale = 6)
+    private BigDecimal lat;
 
-    @Column(nullable = false)
-    private Double lng;
+    @Column(nullable = false, precision = 10, scale = 6)
+    private BigDecimal lng;
 }

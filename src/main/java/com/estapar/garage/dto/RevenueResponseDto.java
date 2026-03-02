@@ -3,6 +3,7 @@ package com.estapar.garage.dto;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -10,7 +11,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class RevenueResponseDto {
-    private String sector;
-    private String date; // yyyy-MM-dd
-    private BigDecimal total;
+    private BigDecimal amount;
+    private String currency = "BRL";
+    private Instant timestamp;
 }

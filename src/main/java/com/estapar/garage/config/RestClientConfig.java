@@ -9,7 +9,9 @@ import org.springframework.web.client.RestClient;
 public class RestClientConfig {
 
     @Bean
-    RestClient garageSimulatorClient(@Value("${garage.simulator.base-url}") String baseUrl) {
+    public RestClient garageSimulatorClient(
+            @Value("${garage.simulator.base-url:http://garage-sim:3000}") String baseUrl
+    ) {
         return RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();

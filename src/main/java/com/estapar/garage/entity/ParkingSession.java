@@ -36,11 +36,11 @@ public class ParkingSession {
 
     // vaga usada na sessão
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "spot_id", nullable = false)
+    @JoinColumn(name = "spot_id", nullable = true)
     private ParkingSpot spot;
 
     // multiplica o basePrice no EXIT
-    @Column(nullable = false, precision = 10, scale = 4)
+    @Column(nullable = true, precision = 10, scale = 4)
     private BigDecimal priceMultiplierApplied;
 
     public enum Status { ENTRY, PARKED, EXIT }

@@ -164,7 +164,7 @@ public class WebhookService {
         if (minutes <= 30) return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
         long billableMinutes = minutes - 30;
-        long hours = (billableMinutes + 59) / 60; // ceil
+        long hours = (billableMinutes + 59) / 60;
 
         BigDecimal total = basePrice
                 .multiply(BigDecimal.valueOf(hours))

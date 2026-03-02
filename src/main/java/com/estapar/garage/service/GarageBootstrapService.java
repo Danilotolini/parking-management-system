@@ -16,7 +16,9 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +31,9 @@ public class GarageBootstrapService implements ApplicationRunner {
 
     @Value("${garage.bootstrap.enabled:true}")
     private boolean bootstrapEnabled;
+
+    @Value("${garage.simulator.base-url:http://garage-sim:3000}")
+    private String simulatorBaseUrl;
 
     @Override
     @Transactional
@@ -54,8 +59,8 @@ public class GarageBootstrapService implements ApplicationRunner {
                 return;
             }
 
-            // mapa sector -> basePrice (vem de resp.garage)
-            var baseBySector = new java.util.HashMap<String, java.math.BigDecimal>();
+            // sector -> basePrice (vem do resp.garage)
+            var baseBySector = new HashMap<String, BigDecimal>();
             if (resp.getGarage() != null) {
                 for (var s : resp.getGarage()) {
                     baseBySector.put(s.getSector(), s.getBasePrice());
@@ -67,8 +72,8 @@ public class GarageBootstrapService implements ApplicationRunner {
             for (var spot : resp.getSpots()) {
                 var base = baseBySector.get(spot.getSector());
                 if (base == null) {
-                    // se vier spot com setor não mapeado, ignora ou joga warn
-                    log.warn("Spot {} sector {} has no base_price in garage list. Skipping.", spot.getId(), spot.getSector());
+                    log.warn("Spot {} sector {} has no base_price in garage list. Skipping.",
+                            spot.getId(), spot.getSector());
                     continue;
                 }
 
@@ -76,7 +81,7 @@ public class GarageBootstrapService implements ApplicationRunner {
                         .id(spot.getId())
                         .sector(spot.getSector())
                         .basePrice(base)
-                        .occupied(false)     // <- importante: não confiar nesse occupied do simulador
+                        .occupied(false) // não confiar no simulador
                         .lat(spot.getLat())
                         .lng(spot.getLng())
                         .build());
@@ -86,7 +91,7 @@ public class GarageBootstrapService implements ApplicationRunner {
             log.info("Bootstrap OK: inserted {} spots from simulator.", toInsert.size());
 
         } catch (ResourceAccessException e) {
-            log.warn("Garage simulator not reachable at http://localhost:3000/garage. Skipping bootstrap.");
+            log.warn("Garage simulator not reachable at {}. Skipping bootstrap.", simulatorBaseUrl);
         } catch (RestClientResponseException e) {
             log.warn("Garage simulator returned HTTP {}. Skipping bootstrap.", e.getStatusCode().value());
         } catch (Exception e) {
