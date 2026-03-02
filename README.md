@@ -1,4 +1,4 @@
-# Garage API — Estapar Backend Test
+# Garage API 
 
 Sistema backend para gerenciamento de estacionamento: controle de vagas, entrada/saída de veículos e cálculo de receita por setor.
 
